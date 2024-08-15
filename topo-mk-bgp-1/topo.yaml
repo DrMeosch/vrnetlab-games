@@ -1,0 +1,40 @@
+name: bgp-1
+topology:
+  kinds:
+    vr-ros:
+      image: vrnetlab/vr-routeros:7.15.3
+  nodes:
+    R1:
+      kind: vr-ros
+      startup-config: r1-config.rsc
+    R2:
+      kind: vr-ros
+      startup-config: r2-config.rsc
+    n1:
+      kind: linux
+      image: oraclelinux:9
+      cmd: /bin/bash /root/nn-config.sh
+      binds:
+        - ./nn-config.sh:/root/nn-config.sh
+        - ~/.ssh/id_rsa_vrnetlab.pub:/root/.ssh/id_rsa.pub
+      stages:
+        create:
+          wait-for:
+            - node: R1
+              stage: healthy
+    n2:
+      kind: linux
+      image: oraclelinux:9
+      cmd: /bin/bash /root/nn-config.sh
+      binds:
+        - ./nn-config.sh:/root/nn-config.sh
+        - ~/.ssh/id_rsa_vrnetlab.pub:/root/.ssh/id_rsa.pub
+      stages:
+        create:
+          wait-for:
+            - node: R2
+              stage: healthy
+  links:
+    - endpoints: ["R1:ether2", "R2:ether2"]
+    - endpoints: ["n1:eth1", "R1:ether3"]
+    - endpoints: ["n2:eth1", "R2:ether3"]
