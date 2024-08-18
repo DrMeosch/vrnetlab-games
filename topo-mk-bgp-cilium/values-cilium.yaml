@@ -1,0 +1,8 @@
+cluster:
+  id: 10
+  name: clab-bgp-cplane
+
+kubeProxyReplacement: true
+
+bgpControlPlane:
+  enabled: true

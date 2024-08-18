@@ -1,0 +1,44 @@
+name: bgp-cilium
+topology:
+  kinds:
+    linux:
+      cmd: bash
+    vr-ros:
+      image: vrnetlab/vr-routeros:7.15.3
+  nodes:
+    R1:
+      kind: vr-ros
+      startup-config: r1-config.rsc
+    R2:
+      kind: vr-ros
+      startup-config: r2-config.rsc
+    n1:
+      kind: linux
+      image: oraclelinux:9
+      cmd: /bin/bash /root/nn-config.sh
+      binds:
+        - ./nn-config.sh:/root/nn-config.sh
+        - ~/.ssh/id_rsa_vrnetlab.pub:/root/.ssh/id_rsa.pub
+      stages:
+        create:
+          wait-for:
+            - node: R1
+              stage: healthy
+    cilium:
+      kind: linux
+      image: nicolaka/netshoot:latest
+      network-mode: container:clab-bgp-cplane-control-plane
+      exec:
+        - ip addr add 192.168.97.250/24 dev net0
+        - ip r del default
+        - ip r add default via 192.168.97.254 dev net0
+      stages:
+        create:
+          wait-for:
+            - node: R2
+              stage: healthy
+
+  links:
+    - endpoints: ["R1:ether2", "R2:ether2"]
+    - endpoints: ["R1:ether3", "n1:eth1"]
+    - endpoints: ["R2:ether3", "cilium:net0"]
